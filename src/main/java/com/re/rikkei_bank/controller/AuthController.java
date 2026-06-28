@@ -55,4 +55,17 @@ public class AuthController {
                         .build()
         );
     }
+
+    @PostMapping(value = "/register", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<com.re.rikkei_bank.dto.response.RegisterResponse>> register(
+            @Valid @ModelAttribute com.re.rikkei_bank.dto.request.RegisterRequest request
+    ) throws java.io.IOException {
+        com.re.rikkei_bank.dto.response.RegisterResponse registerResponse = authService.register(request);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(
+                ApiResponse.<com.re.rikkei_bank.dto.response.RegisterResponse>builder()
+                        .success(true)
+                        .data(registerResponse)
+                        .build()
+        );
+    }
 }
