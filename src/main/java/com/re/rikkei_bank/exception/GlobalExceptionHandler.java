@@ -47,4 +47,14 @@ public class GlobalExceptionHandler {
                 .errors(errors)
                 .build();
     }
+    @ExceptionHandler(CustomException.class)
+    public org.springframework.http.ResponseEntity<ErrorResponse> handleCustomException(CustomException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .errorCode(ex.getStatus().name())
+                .timestamp(LocalDateTime.now())
+                .build();
+        return new org.springframework.http.ResponseEntity<>(errorResponse, ex.getStatus());
+    }
 }

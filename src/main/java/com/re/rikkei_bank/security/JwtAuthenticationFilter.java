@@ -1,5 +1,6 @@
 package com.re.rikkei_bank.security;
 
+import com.re.rikkei_bank.repository.TokenBlacklistRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,23 +22,28 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
+    private final TokenBlacklistRepository tokenBlacklistRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
             if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
-                String username = jwtProvider.getUsernameFromJwt(jwt);
-                String role = jwtProvider.getRoleFromJwt(jwt);
-                
-                String roleAuthority = role != null && role.startsWith("ROLE_") ? role : "ROLE_" + (role != null ? role : "USER");
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority(roleAuthority);
-                
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        username, null, Collections.singletonList(authority));
-                
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (tokenBlacklistRepository.existsByToken(jwt)) {
+                    logger.warn("JWT is blacklisted");
+                } else {
+                    String username = jwtProvider.getUsernameFromJwt(jwt);
+                    String role = jwtProvider.getRoleFromJwt(jwt);
+                    
+                    String roleAuthority = role != null && role.startsWith("ROLE_") ? role : "ROLE_" + (role != null ? role : "USER");
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority(roleAuthority);
+                    
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            username, null, Collections.singletonList(authority));
+                    
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);
