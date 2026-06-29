@@ -1,0 +1,329 @@
+openapi: 3.0.3
+info:
+  title: Rikkei Bank API
+  description: REST API Documentation cho hệ thống Rikkei Bank (Auth, eKYC, User Management, Transaction).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local Server
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: "nguyenvana"
+        password:
+          type: string
+          example: "Abc@123456"
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+            username:
+              type: string
+            role:
+              type: string
+
+    ApiResponseError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Validation failed"
+        errorCode:
+          type: string
+          example: "VALIDATION_ERROR"
+        errors:
+          type: object
+          additionalProperties:
+            type: string
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "new_email@gmail.com"
+        phoneNumber:
+          type: string
+          example: "0912345678"
+        roleId:
+          type: integer
+          example: 2
+
+    TransferRequest:
+      type: object
+      required:
+        - fromAccountNumber
+        - toAccountNumber
+        - amount
+        - transactionPin
+      properties:
+        fromAccountNumber:
+          type: string
+          example: "0319762148"
+        toAccountNumber:
+          type: string
+          example: "5791248630"
+        amount:
+          type: number
+          example: 50000.00
+        description:
+          type: string
+          example: "Chuyển tiền mua sắm"
+        transactionPin:
+          type: string
+          example: "123456"
+
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Đăng ký tài khoản (Register)
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - confirmPassword
+                - fullName
+                - phoneNumber
+                - idNumber
+                - dob
+                - address
+                - gender
+                - cccdFront
+                - cccdBack
+                - selfie
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                confirmPassword:
+                  type: string
+                fullName:
+                  type: string
+                phoneNumber:
+                  type: string
+                idNumber:
+                  type: string
+                dob:
+                  type: string
+                  format: date
+                address:
+                  type: string
+                gender:
+                  type: string
+                  enum: [MALE, FEMALE, OTHER]
+                cccdFront:
+                  type: string
+                  format: binary
+                cccdBack:
+                  type: string
+                  format: binary
+                selfie:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Đăng ký thành công
+        '400':
+          description: Lỗi validation hoặc trùng lặp dữ liệu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /api/v1/auth/login:
+    post:
+      summary: Đăng nhập (Login)
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Đăng nhập thành công trả về Token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Sai tài khoản / mật khẩu
+        '403':
+          description: Tài khoản bị khóa
+
+  /api/v1/users:
+    get:
+      summary: Lấy danh sách người dùng
+      tags:
+        - User Management (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: keyword
+          schema:
+            type: string
+          description: Tìm theo tên, email, phone
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Danh sách người dùng
+        '403':
+          description: Không có quyền truy cập (Chỉ Admin)
+
+  /api/v1/users/{id}:
+    get:
+      summary: Xem chi tiết User
+      tags:
+        - User Management (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Thành công
+        '404':
+          description: Không tìm thấy
+    put:
+      summary: Cập nhật thông tin cơ bản
+      tags:
+        - User Management (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      summary: Xóa người dùng
+      description: Nếu người dùng đã có giao dịch, API sẽ trả về lỗi 400. Yêu cầu dùng chức năng Khóa thay thế.
+      tags:
+        - User Management (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Xóa thành công
+        '400':
+          description: Không thể xóa cứng
+
+  /api/v1/users/{id}/lock:
+    put:
+      summary: Khóa người dùng
+      tags:
+        - User Management (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Khóa thành công
+
+  /api/v1/users/{id}/unlock:
+    put:
+      summary: Mở khóa người dùng
+      tags:
+        - User Management (Admin)
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Mở khóa thành công
+
+  /api/v1/transactions/transfer:
+    post:
+      summary: Chuyển tiền nội bộ
+      tags:
+        - Transactions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Giao dịch thành công
+        '400':
+          description: Số dư không đủ / PIN sai / Lỗi validate
