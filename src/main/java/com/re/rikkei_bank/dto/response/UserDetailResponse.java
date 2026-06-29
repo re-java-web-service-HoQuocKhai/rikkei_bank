@@ -5,11 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserResponse {
+public class UserDetailResponse {
     private Long id;
     private String username;
     private String email;
@@ -17,5 +19,8 @@ public class UserResponse {
     private String role;
     private Boolean isActive;
     private Boolean isKyc;
-    private java.time.LocalDateTime createdAt;
+    private LocalDateTime createdAt;
+
+    private AccountResponse account;
+    private KycResponse kycProfile;
 }

@@ -20,4 +20,6 @@ public interface KycProfileRepository extends JpaRepository<KycProfile, Long> {
            "(:status IS NULL OR k.status = :status) AND " +
            "(:keyword IS NULL OR k.idNumber LIKE %:keyword% OR LOWER(k.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<KycProfile> searchKycProfiles(@Param("status") KycStatus status, @Param("keyword") String keyword, Pageable pageable);
+
+    Optional<KycProfile> findByUserId(Long userId);
 }
