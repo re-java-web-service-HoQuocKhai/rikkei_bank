@@ -57,4 +57,26 @@ public class GlobalExceptionHandler {
                 .build();
         return new org.springframework.http.ResponseEntity<>(errorResponse, ex.getStatus());
     }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleUserNotFoundException(UserNotFoundException ex) {
+        return ErrorResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .errorCode("USER_NOT_FOUND")
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler(AccountNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErrorResponse handleAccountNotFoundException(AccountNotFoundException ex) {
+        return ErrorResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .errorCode("ACCOUNT_NOT_FOUND")
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
 }

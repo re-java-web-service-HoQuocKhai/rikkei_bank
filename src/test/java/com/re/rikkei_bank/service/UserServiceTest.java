@@ -133,4 +133,20 @@ class UserServiceTest {
         assertTrue(testUser.getIsActive());
         verify(userRepository).save(testUser);
     }
+
+    @Test
+    void searchUsers_Success() {
+        com.re.rikkei_bank.dto.projection.UserProjection projection = new com.re.rikkei_bank.dto.projection.UserProjection(
+                1L, "testuser", "test@gmail.com", "0987654321", "ROLE_CUSTOMER", true, false, null);
+        org.springframework.data.domain.Page<com.re.rikkei_bank.dto.projection.UserProjection> page = new org.springframework.data.domain.PageImpl<>(java.util.List.of(projection));
+        
+        when(userRepository.searchUsers(any(), any(), any(), any(), any())).thenReturn(page);
+
+        com.re.rikkei_bank.dto.response.PageResponse<com.re.rikkei_bank.dto.projection.UserProjection> response = 
+                userService.searchUsers("test", null, true, null, org.springframework.data.domain.PageRequest.of(0, 10));
+
+        assertNotNull(response);
+        assertEquals(1, response.getContent().size());
+        assertEquals("testuser", response.getContent().get(0).getUsername());
+    }
 }

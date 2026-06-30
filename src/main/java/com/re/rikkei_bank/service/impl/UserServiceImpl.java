@@ -1,12 +1,15 @@
 package com.re.rikkei_bank.service.impl;
 
+import com.re.rikkei_bank.dto.projection.UserProjection;
 import com.re.rikkei_bank.dto.request.UserUpdateRequest;
 import com.re.rikkei_bank.dto.response.AccountResponse;
 import com.re.rikkei_bank.dto.response.KycResponse;
+import com.re.rikkei_bank.dto.response.PageResponse;
 import com.re.rikkei_bank.dto.response.UserDetailResponse;
 import com.re.rikkei_bank.dto.response.UserResponse;
 import com.re.rikkei_bank.exception.CustomException;
 import com.re.rikkei_bank.exception.DuplicateResourceException;
+import com.re.rikkei_bank.exception.UserNotFoundException;
 import com.re.rikkei_bank.mapper.RegisterMapper;
 import com.re.rikkei_bank.model.Account;
 import com.re.rikkei_bank.model.KycProfile;
@@ -35,15 +38,15 @@ public class UserServiceImpl implements UserService {
     private final RegisterMapper registerMapper;
 
     @Override
-    public Page<UserResponse> searchUsers(String keyword, Pageable pageable) {
-        Page<User> users = userRepository.searchUsers(keyword, pageable);
-        return users.map(registerMapper::toUserResponse);
+    public PageResponse<UserProjection> searchUsers(String keyword, String cccd, Boolean status, String roleName, Pageable pageable) {
+        Page<UserProjection> users = userRepository.searchUsers(keyword, cccd, status, roleName, pageable);
+        return PageResponse.of(users);
     }
 
     @Override
     public UserDetailResponse getUserDetail(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new UserNotFoundException("Không tìm thấy người dùng với id: " + id));
 
         UserResponse baseResponse = registerMapper.toUserResponse(user);
         
@@ -71,7 +74,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public UserResponse updateUser(Long id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new UserNotFoundException("Không tìm thấy người dùng với id: " + id));
 
         if (request.getEmail() != null && !request.getEmail().isEmpty()) {
             if (userRepository.existsByEmailAndIdNot(request.getEmail(), id)) {
@@ -101,7 +104,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new UserNotFoundException("Không tìm thấy người dùng với id: " + id));
 
         if (transactionRepository.hasTransactionsByUserId(id)) {
             throw new CustomException("Người dùng đã có lịch sử giao dịch. Không thể xóa cứng, vui lòng sử dụng chức năng Khóa tài khoản (Lock) thay thế.", HttpStatus.BAD_REQUEST);
@@ -116,7 +119,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public void lockUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new UserNotFoundException("Không tìm thấy người dùng với id: " + id));
         user.setIsActive(false);
         userRepository.save(user);
     }
@@ -125,7 +128,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public void unlockUser(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Không tìm thấy người dùng", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new UserNotFoundException("Không tìm thấy người dùng với id: " + id));
         user.setIsActive(true);
         userRepository.save(user);
     }

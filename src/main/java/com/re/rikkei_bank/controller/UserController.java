@@ -24,15 +24,22 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> getUserList(
+    public ResponseEntity<ApiResponse<com.re.rikkei_bank.dto.response.PageResponse<com.re.rikkei_bank.dto.projection.UserProjection>>> getUserList(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String cccd,
+            @RequestParam(required = false) Boolean status,
+            @RequestParam(required = false) String roleName,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortDir,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<UserResponse> response = userService.searchUsers(keyword, pageable);
+        Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        com.re.rikkei_bank.dto.response.PageResponse<com.re.rikkei_bank.dto.projection.UserProjection> response = 
+                userService.searchUsers(keyword, cccd, status, roleName, pageable);
         return ResponseEntity.ok(
-                ApiResponse.<Page<UserResponse>>builder()
+                ApiResponse.<com.re.rikkei_bank.dto.response.PageResponse<com.re.rikkei_bank.dto.projection.UserProjection>>builder()
                         .success(true)
                         .data(response)
                         .build()

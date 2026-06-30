@@ -22,10 +22,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmailAndIdNot(String email, Long id);
     boolean existsByPhoneNumberAndIdNot(String phoneNumber, Long id);
 
-    @Query("SELECT u FROM User u WHERE " +
-           "(:keyword IS NULL OR " +
-           "LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "LOWER(u.phoneNumber) LIKE LOWER(CONCAT('%', :keyword, '%')))")
-    Page<User> searchUsers(@Param("keyword") String keyword, Pageable pageable);
+    @Query("SELECT new com.re.rikkei_bank.dto.projection.UserProjection(" +
+           "u.id, u.username, u.email, u.phoneNumber, r.name, u.isActive, u.isKyc, u.createdAt) " +
+           "FROM User u " +
+           "LEFT JOIN u.role r " +
+           "LEFT JOIN KycProfile k ON k.user = u " +
+           "WHERE (:keyword IS NULL OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "      OR LOWER(u.phoneNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:cccd IS NULL OR k.idNumber = :cccd) " +
+           "AND (:status IS NULL OR u.isActive = :status) " +
+           "AND (:roleName IS NULL OR r.name = :roleName)")
+    Page<com.re.rikkei_bank.dto.projection.UserProjection> searchUsers(
+            @Param("keyword") String keyword,
+            @Param("cccd") String cccd,
+            @Param("status") Boolean status,
+            @Param("roleName") String roleName,
+            Pageable pageable);
 }
