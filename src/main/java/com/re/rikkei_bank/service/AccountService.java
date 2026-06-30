@@ -11,4 +11,5 @@ public interface AccountService {
     void lockAccount(Long id);
     void unlockAccount(Long id);
     BalanceResponse getBalance(Long accountId, String currentUsername);
+    void changePin(Long accountId, com.re.rikkei_bank.dto.request.ChangePinRequest request, String username);
 }

@@ -237,4 +237,56 @@ public class AuthServiceImpl implements AuthService {
                     });
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(com.re.rikkei_bank.dto.request.ChangePasswordRequest request, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new CustomException("Tài khoản không tồn tại", HttpStatus.NOT_FOUND));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new CustomException("Mật khẩu cũ không chính xác", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new CustomException("Xác nhận mật khẩu mới không khớp", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public String forgotPassword(com.re.rikkei_bank.dto.request.ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new CustomException("Không tìm thấy tài khoản với email này", HttpStatus.NOT_FOUND));
+
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        return token;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetPassword(com.re.rikkei_bank.dto.request.ResetPasswordRequest request) {
+        User user = userRepository.findByResetToken(request.getToken())
+                .orElseThrow(() -> new CustomException("Mã xác nhận không hợp lệ", HttpStatus.BAD_REQUEST));
+
+        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new CustomException("Mã xác nhận đã hết hạn", HttpStatus.BAD_REQUEST);
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new CustomException("Xác nhận mật khẩu mới không khớp", HttpStatus.BAD_REQUEST);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+    }
 }

@@ -68,4 +68,47 @@ public class AuthController {
                         .build()
         );
     }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<ApiResponse<String>> changePassword(
+            @Valid @RequestBody com.re.rikkei_bank.dto.request.ChangePasswordRequest request,
+            java.security.Principal principal
+    ) {
+        authService.changePassword(request, principal.getName());
+        return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .message("Đổi mật khẩu thành công")
+                        .data(null)
+                        .build()
+        );
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(
+            @Valid @RequestBody com.re.rikkei_bank.dto.request.ForgotPasswordRequest request
+    ) {
+        String token = authService.forgotPassword(request);
+        return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .message("Mã xác nhận đã được gửi")
+                        .data(token) // Trả thẳng token ra để dễ test
+                        .build()
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(
+            @Valid @RequestBody com.re.rikkei_bank.dto.request.ResetPasswordRequest request
+    ) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .message("Đặt lại mật khẩu thành công")
+                        .data(null)
+                        .build()
+        );
+    }
 }

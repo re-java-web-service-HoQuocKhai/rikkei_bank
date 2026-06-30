@@ -18,6 +18,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final AccountMapper accountMapper;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     public AccountResponse getAccountById(Long id) {
@@ -78,5 +79,27 @@ public class AccountServiceImpl implements AccountService {
                 .currency(account.getCurrency())
                 .lastUpdated(account.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changePin(Long accountId, com.re.rikkei_bank.dto.request.ChangePinRequest request, String username) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException("Không tìm thấy tài khoản với id: " + accountId));
+        
+        if (!account.getUser().getUsername().equals(username)) {
+            throw new com.re.rikkei_bank.exception.CustomException("Bạn không có quyền đổi mã PIN của tài khoản này", org.springframework.http.HttpStatus.FORBIDDEN);
+        }
+
+        if (account.getTransactionPin() == null || !passwordEncoder.matches(request.getOldPin(), account.getTransactionPin())) {
+            throw new com.re.rikkei_bank.exception.CustomException("Mã PIN cũ không chính xác", org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+
+        if (!request.getNewPin().equals(request.getConfirmPin())) {
+            throw new com.re.rikkei_bank.exception.CustomException("Xác nhận mã PIN mới không khớp", org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+
+        account.setTransactionPin(passwordEncoder.encode(request.getNewPin()));
+        accountRepository.save(account);
     }
 }

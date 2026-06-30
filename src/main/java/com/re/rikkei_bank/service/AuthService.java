@@ -9,4 +9,7 @@ public interface AuthService {
     AuthResponse refreshToken(RefreshTokenRequest request);
     void logout(String accessToken, RefreshTokenRequest request);
     com.re.rikkei_bank.dto.response.RegisterResponse register(com.re.rikkei_bank.dto.request.RegisterRequest request) throws java.io.IOException;
+    void changePassword(com.re.rikkei_bank.dto.request.ChangePasswordRequest request, String username);
+    String forgotPassword(com.re.rikkei_bank.dto.request.ForgotPasswordRequest request);
+    void resetPassword(com.re.rikkei_bank.dto.request.ResetPasswordRequest request);
 }

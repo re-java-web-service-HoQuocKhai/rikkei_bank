@@ -84,4 +84,21 @@ public class AccountController {
                         .build()
         );
     }
+
+    @PutMapping("/{id}/pin")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<ApiResponse<String>> changePin(
+            @PathVariable Long id,
+            @jakarta.validation.Valid @RequestBody com.re.rikkei_bank.dto.request.ChangePinRequest request,
+            java.security.Principal principal
+    ) {
+        accountService.changePin(id, request, principal.getName());
+        return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .message("Đổi mã PIN thành công")
+                        .data(null)
+                        .build()
+        );
+    }
 }

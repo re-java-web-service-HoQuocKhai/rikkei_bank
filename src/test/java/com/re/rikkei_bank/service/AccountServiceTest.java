@@ -145,4 +145,42 @@ class AccountServiceTest {
 
         assertThrows(AccountNotFoundException.class, () -> accountService.getBalance(1L, "owner_user"));
     }
+
+    @Test
+    void changePin_Success() {
+        com.re.rikkei_bank.model.User user = new com.re.rikkei_bank.model.User();
+        user.setUsername("owner_user");
+        testAccount.setUser(user);
+        testAccount.setTransactionPin("encodedOldPin");
+
+        com.re.rikkei_bank.dto.request.ChangePinRequest request = new com.re.rikkei_bank.dto.request.ChangePinRequest("oldPin", "123456", "123456");
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(testAccount));
+        org.springframework.security.crypto.password.PasswordEncoder encoder = mock(org.springframework.security.crypto.password.PasswordEncoder.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(accountService, "passwordEncoder", encoder);
+        when(encoder.matches("oldPin", "encodedOldPin")).thenReturn(true);
+        when(encoder.encode("123456")).thenReturn("encodedNewPin");
+
+        accountService.changePin(1L, request, "owner_user");
+
+        assertEquals("encodedNewPin", testAccount.getTransactionPin());
+        verify(accountRepository).save(testAccount);
+    }
+
+    @Test
+    void changePin_WrongOldPin_ThrowsException() {
+        com.re.rikkei_bank.model.User user = new com.re.rikkei_bank.model.User();
+        user.setUsername("owner_user");
+        testAccount.setUser(user);
+        testAccount.setTransactionPin("encodedOldPin");
+
+        com.re.rikkei_bank.dto.request.ChangePinRequest request = new com.re.rikkei_bank.dto.request.ChangePinRequest("wrongPin", "123456", "123456");
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(testAccount));
+        org.springframework.security.crypto.password.PasswordEncoder encoder = mock(org.springframework.security.crypto.password.PasswordEncoder.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(accountService, "passwordEncoder", encoder);
+        when(encoder.matches("wrongPin", "encodedOldPin")).thenReturn(false);
+
+        assertThrows(com.re.rikkei_bank.exception.CustomException.class, () -> accountService.changePin(1L, request, "owner_user"));
+    }
 }
