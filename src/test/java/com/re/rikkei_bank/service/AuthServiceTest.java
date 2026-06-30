@@ -145,7 +145,7 @@ class AuthServiceTest {
 
     @Test
     void changePassword_Success() {
-        com.re.rikkei_bank.dto.request.ChangePasswordRequest request = new com.re.rikkei_bank.dto.request.ChangePasswordRequest("oldpass", "newpass", "newpass");
+        com.re.rikkei_bank.dto.request.ChangePasswordRequest request = new com.re.rikkei_bank.dto.request.ChangePasswordRequest("oldpass", "newpassword", "newpassword");
         
         com.re.rikkei_bank.repository.UserRepository userRepository = mock(com.re.rikkei_bank.repository.UserRepository.class);
         org.springframework.security.crypto.password.PasswordEncoder encoder = mock(org.springframework.security.crypto.password.PasswordEncoder.class);
@@ -154,7 +154,7 @@ class AuthServiceTest {
         
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
         when(encoder.matches("oldpass", "password")).thenReturn(true);
-        when(encoder.encode("newpass")).thenReturn("encodedNewPass");
+        when(encoder.encode("newpassword")).thenReturn("encodedNewPass");
         
         authService.changePassword(request, "testuser");
         
@@ -181,7 +181,7 @@ class AuthServiceTest {
 
     @Test
     void resetPassword_Success() {
-        com.re.rikkei_bank.dto.request.ResetPasswordRequest request = new com.re.rikkei_bank.dto.request.ResetPasswordRequest("valid-token", "newpass", "newpass");
+        com.re.rikkei_bank.dto.request.ResetPasswordRequest request = new com.re.rikkei_bank.dto.request.ResetPasswordRequest("valid-token", "newpassword", "newpassword");
         mockUser.setResetToken("valid-token");
         mockUser.setResetTokenExpiry(LocalDateTime.now().plusMinutes(10));
         
@@ -191,7 +191,7 @@ class AuthServiceTest {
         org.springframework.test.util.ReflectionTestUtils.setField(authService, "passwordEncoder", encoder);
         
         when(userRepository.findByResetToken("valid-token")).thenReturn(Optional.of(mockUser));
-        when(encoder.encode("newpass")).thenReturn("encodedNewPass");
+        when(encoder.encode("newpassword")).thenReturn("encodedNewPass");
         
         authService.resetPassword(request);
         

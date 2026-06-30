@@ -71,7 +71,7 @@ class AuthControllerTest {
     @Test
     @WithMockUser(username = "testuser", roles = "CUSTOMER")
     void changePassword_Success() throws Exception {
-        ChangePasswordRequest request = new ChangePasswordRequest("oldpass", "newpass", "newpass");
+        ChangePasswordRequest request = new ChangePasswordRequest("oldpass", "newpassword", "newpassword");
 
         Mockito.doNothing().when(authService).changePassword(any(ChangePasswordRequest.class), any(String.class));
 

@@ -79,4 +79,15 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ErrorResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .errorCode("BAD_REQUEST")
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
 }
