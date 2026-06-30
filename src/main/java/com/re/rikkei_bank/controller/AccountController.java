@@ -69,4 +69,19 @@ public class AccountController {
                         .build()
         );
     }
+
+    @GetMapping("/{id}/balance")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<ApiResponse<com.re.rikkei_bank.dto.response.BalanceResponse>> getBalance(
+            @PathVariable Long id,
+            java.security.Principal principal
+    ) {
+        com.re.rikkei_bank.dto.response.BalanceResponse response = accountService.getBalance(id, principal.getName());
+        return ResponseEntity.ok(
+                ApiResponse.<com.re.rikkei_bank.dto.response.BalanceResponse>builder()
+                        .success(true)
+                        .data(response)
+                        .build()
+        );
+    }
 }

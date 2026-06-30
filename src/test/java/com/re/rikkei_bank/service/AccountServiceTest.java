@@ -106,4 +106,43 @@ class AccountServiceTest {
         assertTrue(testAccount.getActive());
         verify(accountRepository).save(testAccount);
     }
+
+    @Test
+    void getBalance_Success() {
+        com.re.rikkei_bank.model.User user = new com.re.rikkei_bank.model.User();
+        user.setUsername("owner_user");
+        testAccount.setUser(user);
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(testAccount));
+
+        com.re.rikkei_bank.dto.response.BalanceResponse response = accountService.getBalance(1L, "owner_user");
+
+        assertNotNull(response);
+        assertEquals("1234567890", response.getAccountNumber());
+        assertEquals(java.math.BigDecimal.valueOf(50000.0), response.getBalance());
+    }
+
+    @Test
+    void getBalance_AccessDenied_ThrowsException() {
+        com.re.rikkei_bank.model.User user = new com.re.rikkei_bank.model.User();
+        user.setUsername("owner_user");
+        testAccount.setUser(user);
+
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(testAccount));
+
+        com.re.rikkei_bank.exception.CustomException exception = assertThrows(
+                com.re.rikkei_bank.exception.CustomException.class,
+                () -> accountService.getBalance(1L, "hacker_user")
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.FORBIDDEN, exception.getStatus());
+        assertTrue(exception.getMessage().contains("không có quyền"));
+    }
+
+    @Test
+    void getBalance_AccountNotFound_ThrowsException() {
+        when(accountRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(AccountNotFoundException.class, () -> accountService.getBalance(1L, "owner_user"));
+    }
 }

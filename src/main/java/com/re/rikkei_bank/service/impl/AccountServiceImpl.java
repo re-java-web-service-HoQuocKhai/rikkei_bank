@@ -62,4 +62,21 @@ public class AccountServiceImpl implements AccountService {
         account.setActive(true);
         accountRepository.save(account);
     }
+
+    @Override
+    public com.re.rikkei_bank.dto.response.BalanceResponse getBalance(Long accountId, String currentUsername) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException("Không tìm thấy tài khoản với id: " + accountId));
+        
+        if (!account.getUser().getUsername().equals(currentUsername)) {
+            throw new com.re.rikkei_bank.exception.CustomException("Bạn không có quyền xem số dư của tài khoản này", org.springframework.http.HttpStatus.FORBIDDEN);
+        }
+
+        return com.re.rikkei_bank.dto.response.BalanceResponse.builder()
+                .accountNumber(account.getAccountNumber())
+                .balance(account.getBalance())
+                .currency(account.getCurrency())
+                .lastUpdated(account.getUpdatedAt())
+                .build();
+    }
 }
