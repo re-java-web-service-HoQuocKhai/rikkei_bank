@@ -1,6 +1,6 @@
 package com.re.rikkei_bank.security;
 
-import com.re.rikkei_bank.repository.TokenBlacklistRepository;
+import com.re.rikkei_bank.service.RedisTokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,15 +22,17 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
-    private final TokenBlacklistRepository tokenBlacklistRepository;
+    private final RedisTokenBlacklistService redisTokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = getJwtFromRequest(request);
             if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
-                if (tokenBlacklistRepository.existsByToken(jwt)) {
+                if (redisTokenBlacklistService.isTokenBlacklisted(jwt)) {
                     logger.warn("JWT is blacklisted");
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is blacklisted");
+                    return;
                 } else {
                     String username = jwtProvider.getUsernameFromJwt(jwt);
                     String role = jwtProvider.getRoleFromJwt(jwt);

@@ -37,7 +37,7 @@ class AuthControllerTest {
     private JwtProvider jwtProvider;
 
     @MockitoBean
-    private com.re.rikkei_bank.repository.TokenBlacklistRepository tokenBlacklistRepository;
+    private com.re.rikkei_bank.service.RedisTokenBlacklistService redisTokenBlacklistService;
 
     private ObjectMapper objectMapper = new ObjectMapper();
 

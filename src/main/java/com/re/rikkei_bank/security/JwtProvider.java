@@ -56,6 +56,21 @@ public class JwtProvider {
                 .get("role", String.class);
     }
 
+    public long getRemainingTime(String token) {
+        try {
+            Date expiration = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getExpiration();
+            long remaining = expiration.getTime() - System.currentTimeMillis();
+            return remaining > 0 ? remaining : 0;
+        } catch (Exception ex) {
+            return 0;
+        }
+    }
+
     public boolean validateToken(String token) {
         if (!StringUtils.hasText(token)) {
             return false;

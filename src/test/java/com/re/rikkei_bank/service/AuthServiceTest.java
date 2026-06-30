@@ -9,7 +9,7 @@ import com.re.rikkei_bank.model.Role;
 import com.re.rikkei_bank.model.RoleName;
 import com.re.rikkei_bank.model.User;
 import com.re.rikkei_bank.repository.RefreshTokenRepository;
-import com.re.rikkei_bank.repository.TokenBlacklistRepository;
+import com.re.rikkei_bank.service.RedisTokenBlacklistService;
 import com.re.rikkei_bank.security.CustomUserDetails;
 import com.re.rikkei_bank.security.JwtProvider;
 import com.re.rikkei_bank.service.impl.AuthServiceImpl;
@@ -44,7 +44,7 @@ class AuthServiceTest {
     private RefreshTokenRepository refreshTokenRepository;
 
     @Mock
-    private TokenBlacklistRepository tokenBlacklistRepository;
+    private RedisTokenBlacklistService redisTokenBlacklistService;
 
     @InjectMocks
     private AuthServiceImpl authService;

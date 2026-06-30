@@ -33,7 +33,7 @@ class AccountControllerTest {
     private JwtProvider jwtProvider;
 
     @MockitoBean
-    private com.re.rikkei_bank.repository.TokenBlacklistRepository tokenBlacklistRepository;
+    private com.re.rikkei_bank.service.RedisTokenBlacklistService redisTokenBlacklistService;
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")

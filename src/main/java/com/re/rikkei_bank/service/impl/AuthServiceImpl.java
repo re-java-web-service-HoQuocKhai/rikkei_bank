@@ -14,6 +14,7 @@ import com.re.rikkei_bank.repository.*;
 import com.re.rikkei_bank.security.CustomUserDetails;
 import com.re.rikkei_bank.security.JwtProvider;
 import com.re.rikkei_bank.service.AuthService;
+import com.re.rikkei_bank.service.RedisTokenBlacklistService;
 import com.re.rikkei_bank.service.UploadService;
 import com.re.rikkei_bank.util.GenerateUtils;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
     private final RefreshTokenRepository refreshTokenRepository;
-    private final TokenBlacklistRepository tokenBlacklistRepository;
+    private final RedisTokenBlacklistService redisTokenBlacklistService;
     
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -220,12 +221,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (accessToken != null && jwtProvider.validateToken(accessToken)) {
-            if (!tokenBlacklistRepository.existsByToken(accessToken)) {
-                TokenBlackList blackList = TokenBlackList.builder()
-                        .token(accessToken)
-                        .expiredAt(LocalDateTime.now().plusHours(1))
-                        .build();
-                tokenBlacklistRepository.save(blackList);
+            if (!redisTokenBlacklistService.isTokenBlacklisted(accessToken)) {
+                long remainingTime = jwtProvider.getRemainingTime(accessToken);
+                redisTokenBlacklistService.saveTokenToBlacklist(accessToken, remainingTime);
             }
         }
 
