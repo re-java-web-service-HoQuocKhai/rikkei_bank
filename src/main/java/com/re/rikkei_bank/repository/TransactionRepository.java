@@ -14,4 +14,16 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     @Query("SELECT COUNT(t) > 0 FROM Transaction t WHERE t.fromAccount.user.id = :userId OR t.toAccount.user.id = :userId")
     boolean hasTransactionsByUserId(@Param("userId") Long userId);
+
+    @Query("SELECT t FROM Transaction t " +
+           "WHERE (:accountId = t.fromAccount.id OR :accountId = t.toAccount.id) " +
+           "AND (:type IS NULL OR (:type = 'DEBIT' AND t.fromAccount.id = :accountId) OR (:type = 'CREDIT' AND t.toAccount.id = :accountId)) " +
+           "AND (cast(:startDate as timestamp) IS NULL OR t.createdAt >= :startDate) " +
+           "AND (cast(:endDate as timestamp) IS NULL OR t.createdAt <= :endDate)")
+    org.springframework.data.domain.Page<Transaction> getTransactionHistory(
+            @Param("accountId") Long accountId,
+            @Param("type") String type,
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate,
+            org.springframework.data.domain.Pageable pageable);
 }

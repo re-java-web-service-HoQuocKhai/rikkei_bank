@@ -97,4 +97,52 @@ public class TransactionServiceImpl implements TransactionService {
                 .message("Transfer successful")
                 .build();
     }
+
+    @Override
+    public com.re.rikkei_bank.dto.response.TransactionHistoryResponse getTransactionHistory(Long accountId, String type, java.time.LocalDateTime startDate, java.time.LocalDateTime endDate, int page, int size, String username) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new com.re.rikkei_bank.exception.AccountNotFoundException("Không tìm thấy tài khoản với id: " + accountId));
+        
+        if (!account.getUser().getUsername().equals(username)) {
+            throw new CustomException("Bạn không có quyền xem sao kê tài khoản này", HttpStatus.FORBIDDEN);
+        }
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+        org.springframework.data.domain.Page<Transaction> transactionPage = transactionRepository.getTransactionHistory(accountId, type, startDate, endDate, pageable);
+
+        java.util.List<com.re.rikkei_bank.dto.response.TransactionItemDTO> dtoList = transactionPage.getContent().stream().map(t -> {
+            com.re.rikkei_bank.dto.response.TransactionItemDTO dto = new com.re.rikkei_bank.dto.response.TransactionItemDTO();
+            dto.setTransactionCode(t.getTransactionCode());
+            dto.setCurrency("VND"); // Assuming VND for now
+            dto.setDescription(t.getDescription());
+            dto.setTransactionDate(t.getCreatedAt());
+
+            if (t.getFromAccount() != null && t.getFromAccount().getId().equals(accountId)) {
+                dto.setType("DEBIT");
+                dto.setAmount(t.getAmount().negate());
+                dto.setRelatedAccount(t.getToAccount() != null ? t.getToAccount().getAccountNumber() : null);
+            } else {
+                dto.setType("CREDIT");
+                dto.setAmount(t.getAmount());
+                dto.setRelatedAccount(t.getFromAccount() != null ? t.getFromAccount().getAccountNumber() : null);
+            }
+            return dto;
+        }).toList();
+
+        com.re.rikkei_bank.dto.response.PageResponse<com.re.rikkei_bank.dto.response.TransactionItemDTO> pageResponse = 
+                new com.re.rikkei_bank.dto.response.PageResponse<>(
+                dtoList,
+                transactionPage.getNumber(),
+                transactionPage.getSize(),
+                transactionPage.getTotalElements(),
+                transactionPage.getTotalPages(),
+                transactionPage.isLast()
+        );
+
+        return com.re.rikkei_bank.dto.response.TransactionHistoryResponse.builder()
+                .accountNumber(account.getAccountNumber())
+                .currentBalance(account.getBalance())
+                .transactions(pageResponse)
+                .build();
+    }
 }

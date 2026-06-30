@@ -34,4 +34,26 @@ public class TransactionController {
                         .build()
         );
     }
+
+    @GetMapping("/history")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<ApiResponse<com.re.rikkei_bank.dto.response.TransactionHistoryResponse>> getTransactionHistory(
+            @RequestParam Long accountId,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        com.re.rikkei_bank.dto.response.TransactionHistoryResponse response = transactionService.getTransactionHistory(accountId, type, startDate, endDate, page, size, username);
+
+        return ResponseEntity.ok(
+                ApiResponse.<com.re.rikkei_bank.dto.response.TransactionHistoryResponse>builder()
+                        .success(true)
+                        .data(response)
+                        .build()
+        );
+    }
 }

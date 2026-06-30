@@ -131,4 +131,49 @@ class TransactionServiceTest {
 
         assertThrows(CustomException.class, () -> transactionService.transfer(request, "otherUser"));
     }
+
+    @Test
+    void getTransactionHistory_Success() {
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(senderAccount));
+
+        Transaction tx = Transaction.builder()
+                .transactionCode("TX123")
+                .amount(new BigDecimal("100.00"))
+                .fromAccount(senderAccount)
+                .toAccount(receiverAccount)
+                .description("Test tx")
+                .build();
+        tx.setCreatedAt(java.time.LocalDateTime.now());
+
+        org.springframework.data.domain.Page<Transaction> page = new org.springframework.data.domain.PageImpl<>(java.util.List.of(tx));
+        when(transactionRepository.getTransactionHistory(eq(1L), any(), any(), any(), any())).thenReturn(page);
+
+        com.re.rikkei_bank.dto.response.TransactionHistoryResponse response = transactionService.getTransactionHistory(1L, null, null, null, 0, 10, "senderUser");
+
+        assertNotNull(response);
+        assertEquals("111111", response.getAccountNumber());
+        assertEquals(1, response.getTransactions().getContent().size());
+        assertEquals("DEBIT", response.getTransactions().getContent().get(0).getType());
+        assertEquals(new BigDecimal("-100.00"), response.getTransactions().getContent().get(0).getAmount());
+    }
+
+    @Test
+    void getTransactionHistory_Empty_Success() {
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(senderAccount));
+
+        org.springframework.data.domain.Page<Transaction> page = org.springframework.data.domain.Page.empty();
+        when(transactionRepository.getTransactionHistory(eq(1L), any(), any(), any(), any())).thenReturn(page);
+
+        com.re.rikkei_bank.dto.response.TransactionHistoryResponse response = transactionService.getTransactionHistory(1L, null, null, null, 0, 10, "senderUser");
+
+        assertNotNull(response);
+        assertEquals(0, response.getTransactions().getContent().size());
+    }
+
+    @Test
+    void getTransactionHistory_Unauthorized_ThrowsException() {
+        when(accountRepository.findById(1L)).thenReturn(Optional.of(senderAccount));
+
+        assertThrows(CustomException.class, () -> transactionService.getTransactionHistory(1L, null, null, null, 0, 10, "hackerUser"));
+    }
 }
