@@ -1,6 +1,7 @@
 package com.re.rikkei_bank.controller;
 
 import com.re.rikkei_bank.dto.request.RejectKycRequest;
+import com.re.rikkei_bank.dto.request.ResubmitKycRequest;
 import com.re.rikkei_bank.dto.response.ApiResponse;
 import com.re.rikkei_bank.dto.response.KycDetailResponse;
 import com.re.rikkei_bank.dto.response.KycResponse;
@@ -77,6 +78,22 @@ public class KycController {
                 ApiResponse.<String>builder()
                         .success(true)
                         .message("Từ chối hồ sơ thành công")
+                        .data(null)
+                        .build()
+        );
+    }
+
+    @PutMapping(value = "/resubmit", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<ApiResponse<String>> resubmitKyc(
+            @Valid @ModelAttribute ResubmitKycRequest request,
+            java.security.Principal principal
+    ) throws java.io.IOException {
+        kycService.resubmitKyc(request, principal.getName());
+        return ResponseEntity.ok(
+                ApiResponse.<String>builder()
+                        .success(true)
+                        .message("Nộp lại hồ sơ KYC thành công, vui lòng chờ duyệt")
                         .data(null)
                         .build()
         );

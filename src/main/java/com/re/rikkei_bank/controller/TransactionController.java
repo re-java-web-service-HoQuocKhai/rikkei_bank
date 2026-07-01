@@ -1,7 +1,9 @@
 package com.re.rikkei_bank.controller;
 
+import com.re.rikkei_bank.dto.request.DepositRequest;
 import com.re.rikkei_bank.dto.request.TransferRequest;
 import com.re.rikkei_bank.dto.response.ApiResponse;
+import com.re.rikkei_bank.dto.response.DepositResponse;
 import com.re.rikkei_bank.dto.response.TransferResponse;
 import com.re.rikkei_bank.service.TransactionService;
 import jakarta.validation.Valid;
@@ -31,6 +33,23 @@ public class TransactionController {
                 ApiResponse.<TransferResponse>builder()
                         .success(true)
                         .data(transferResponse)
+                        .build()
+        );
+    }
+
+    @PostMapping("/deposit")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<DepositResponse>> deposit(
+            @Valid @RequestBody DepositRequest request,
+            Authentication authentication
+    ) {
+        String username = authentication.getName();
+        DepositResponse depositResponse = transactionService.deposit(request, username);
+        
+        return ResponseEntity.ok(
+                ApiResponse.<DepositResponse>builder()
+                        .success(true)
+                        .data(depositResponse)
                         .build()
         );
     }

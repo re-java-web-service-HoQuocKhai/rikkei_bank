@@ -1,5 +1,7 @@
 package com.re.rikkei_bank.service.impl;
 
+import com.re.rikkei_bank.dto.request.DepositRequest;
+import com.re.rikkei_bank.dto.response.DepositResponse;
 import com.re.rikkei_bank.dto.request.TransferRequest;
 import com.re.rikkei_bank.dto.response.TransferResponse;
 import com.re.rikkei_bank.exception.*;
@@ -55,6 +57,10 @@ public class TransactionServiceImpl implements TransactionService {
             throw new CustomException("You do not own this account", HttpStatus.FORBIDDEN);
         }
 
+        if (senderAccount.getUser().getIsKyc() == null || !senderAccount.getUser().getIsKyc()) {
+            throw new CustomException("Tài khoản chưa được xác thực KYC. Vui lòng chờ phê duyệt để sử dụng tính năng chuyển tiền.", HttpStatus.FORBIDDEN);
+        }
+
         if (senderAccount.getStatus() == AccountStatus.LOCKED || receiverAccount.getStatus() == AccountStatus.LOCKED) {
             throw new AccountLockedException("One of the accounts is locked");
         }
@@ -95,6 +101,47 @@ public class TransactionServiceImpl implements TransactionService {
                 .transactionCode(txCode)
                 .status("SUCCESS")
                 .message("Transfer successful")
+                .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public DepositResponse deposit(DepositRequest request, String username) {
+        Account account = accountRepository.findByAccountNumberWithLock(request.getAccountNumber())
+                .orElseThrow(() -> new ReceiverNotFoundException("Account not found: " + request.getAccountNumber()));
+
+        if (!account.getUser().getUsername().equals(username)) {
+            throw new CustomException("You do not own this account", HttpStatus.FORBIDDEN);
+        }
+
+        if (account.getUser().getIsKyc() == null || !account.getUser().getIsKyc()) {
+            throw new CustomException("Tài khoản chưa được xác thực KYC. Vui lòng chờ phê duyệt để sử dụng tính năng nạp tiền.", HttpStatus.FORBIDDEN);
+        }
+
+        if (account.getStatus() == AccountStatus.LOCKED || account.getStatus() == AccountStatus.CLOSED || !account.getActive()) {
+            throw new AccountLockedException("Account is locked, inactive, or closed");
+        }
+
+        account.setBalance(account.getBalance().add(request.getAmount()));
+        accountRepository.save(account);
+
+        String txCode = UUID.randomUUID().toString();
+        Transaction transaction = Transaction.builder()
+                .transactionCode(txCode)
+                .amount(request.getAmount())
+                .description(request.getDescription())
+                .status(TransactionStatus.SUCCESS)
+                .type(TransactionType.DEPOSIT)
+                .toAccount(account)
+                .fromAccount(null)
+                .build();
+
+        transactionRepository.save(transaction);
+
+        return DepositResponse.builder()
+                .transactionCode(txCode)
+                .status("SUCCESS")
+                .message("Deposit successful")
                 .build();
     }
 

@@ -1,6 +1,8 @@
 package com.re.rikkei_bank.service;
 
+import com.re.rikkei_bank.dto.request.DepositRequest;
 import com.re.rikkei_bank.dto.request.TransferRequest;
+import com.re.rikkei_bank.dto.response.DepositResponse;
 import com.re.rikkei_bank.dto.response.TransferResponse;
 import com.re.rikkei_bank.exception.*;
 import com.re.rikkei_bank.model.*;
@@ -43,7 +45,7 @@ class TransactionServiceTest {
 
     @BeforeEach
     void setUp() {
-        sender = User.builder().username("senderUser").build();
+        sender = User.builder().username("senderUser").isKyc(true).build();
 
         senderAccount = Account.builder()
                 .id(1L)
@@ -175,5 +177,40 @@ class TransactionServiceTest {
         when(accountRepository.findById(1L)).thenReturn(Optional.of(senderAccount));
 
         assertThrows(CustomException.class, () -> transactionService.getTransactionHistory(1L, null, null, null, 0, 10, "hackerUser"));
+    }
+
+    @Test
+    void deposit_Success() {
+        DepositRequest request = new DepositRequest("111111", new BigDecimal("500.00"), "Deposit 500");
+
+        when(accountRepository.findByAccountNumberWithLock("111111")).thenReturn(Optional.of(senderAccount));
+
+        DepositResponse response = transactionService.deposit(request, "senderUser");
+
+        assertNotNull(response);
+        assertEquals("SUCCESS", response.getStatus());
+        assertEquals(new BigDecimal("1500.00"), senderAccount.getBalance());
+
+        verify(accountRepository).save(senderAccount);
+        verify(transactionRepository).save(any(Transaction.class));
+    }
+
+    @Test
+    void deposit_Unauthorized_ThrowsException() {
+        DepositRequest request = new DepositRequest("111111", new BigDecimal("500.00"), "Deposit 500");
+
+        when(accountRepository.findByAccountNumberWithLock("111111")).thenReturn(Optional.of(senderAccount));
+
+        assertThrows(CustomException.class, () -> transactionService.deposit(request, "otherUser"));
+    }
+
+    @Test
+    void deposit_AccountLocked_ThrowsException() {
+        DepositRequest request = new DepositRequest("111111", new BigDecimal("500.00"), "Deposit 500");
+        senderAccount.setStatus(AccountStatus.LOCKED);
+
+        when(accountRepository.findByAccountNumberWithLock("111111")).thenReturn(Optional.of(senderAccount));
+
+        assertThrows(AccountLockedException.class, () -> transactionService.deposit(request, "senderUser"));
     }
 }

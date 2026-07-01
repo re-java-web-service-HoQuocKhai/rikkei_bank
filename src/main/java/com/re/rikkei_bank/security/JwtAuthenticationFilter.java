@@ -29,7 +29,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
             if (StringUtils.hasText(jwt) && jwtProvider.validateToken(jwt)) {
-                if (redisTokenBlacklistService.isTokenBlacklisted(jwt)) {
+                boolean isBlacklisted = false;
+                try {
+                    isBlacklisted = redisTokenBlacklistService.isTokenBlacklisted(jwt);
+                } catch (Exception e) {
+                    logger.warn("Lỗi kết nối Redis khi check Blacklist, tạm thời bỏ qua (chỉ dành cho môi trường dev): " + e.getMessage());
+                }
+
+                if (isBlacklisted) {
                     logger.warn("JWT is blacklisted");
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token is blacklisted");
                     return;

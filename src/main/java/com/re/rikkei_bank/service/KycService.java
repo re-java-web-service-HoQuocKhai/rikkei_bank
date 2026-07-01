@@ -7,9 +7,12 @@ import com.re.rikkei_bank.model.KycStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import com.re.rikkei_bank.dto.request.ResubmitKycRequest;
+
 public interface KycService {
     Page<KycResponse> searchKycProfiles(KycStatus status, String keyword, Pageable pageable);
     KycDetailResponse getKycDetail(Long id);
     void approveKyc(Long id);
     void rejectKyc(Long id, RejectKycRequest request);
+    void resubmitKyc(ResubmitKycRequest request, String username) throws java.io.IOException;
 }

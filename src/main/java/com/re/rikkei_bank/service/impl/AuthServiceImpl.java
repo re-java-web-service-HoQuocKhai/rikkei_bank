@@ -221,9 +221,15 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (accessToken != null && jwtProvider.validateToken(accessToken)) {
-            if (!redisTokenBlacklistService.isTokenBlacklisted(accessToken)) {
-                long remainingTime = jwtProvider.getRemainingTime(accessToken);
-                redisTokenBlacklistService.saveTokenToBlacklist(accessToken, remainingTime);
+            try {
+                if (!redisTokenBlacklistService.isTokenBlacklisted(accessToken)) {
+                    long remainingTime = jwtProvider.getRemainingTime(accessToken);
+                    redisTokenBlacklistService.saveTokenToBlacklist(accessToken, remainingTime);
+                }
+            } catch (Exception e) {
+                // Redis không khả dụng, log cảnh báo nhưng vẫn tiếp tục logout (revoke refresh token)
+                org.slf4j.LoggerFactory.getLogger(AuthServiceImpl.class)
+                        .warn("Lỗi kết nối Redis khi blacklist token trong logout: {}", e.getMessage());
             }
         }
 

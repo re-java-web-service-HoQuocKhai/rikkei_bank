@@ -1,6 +1,7 @@
 package com.re.rikkei_bank.service;
 
 import com.re.rikkei_bank.dto.request.RejectKycRequest;
+import com.re.rikkei_bank.dto.request.ResubmitKycRequest;
 import com.re.rikkei_bank.exception.CustomException;
 import com.re.rikkei_bank.mapper.RegisterMapper;
 import com.re.rikkei_bank.model.KycProfile;
@@ -8,6 +9,7 @@ import com.re.rikkei_bank.model.KycStatus;
 import com.re.rikkei_bank.model.User;
 import com.re.rikkei_bank.repository.KycProfileRepository;
 import com.re.rikkei_bank.repository.UserRepository;
+import com.re.rikkei_bank.service.UploadService;
 import com.re.rikkei_bank.service.impl.KycServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +18,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.mock.web.MockMultipartFile;
 import java.util.Optional;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +38,9 @@ class KycServiceTest {
 
     @Mock
     private RegisterMapper registerMapper;
+
+    @Mock
+    private UploadService uploadService;
 
     @InjectMocks
     private KycServiceImpl kycService;
@@ -119,5 +127,38 @@ class KycServiceTest {
         when(kycProfileRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(CustomException.class, () -> kycService.getKycDetail(99L));
+    }
+
+    @Test
+    void resubmitKyc_Success() throws java.io.IOException {
+        User resubmitUser = User.builder().id(1L).username("testuser").isKyc(false).build();
+        KycProfile rejectedProfile = KycProfile.builder()
+                .id(1L)
+                .idNumber("123456789012")
+                .status(KycStatus.REJECT)
+                .user(resubmitUser)
+                .build();
+
+        ResubmitKycRequest request = new ResubmitKycRequest();
+        request.setFullName("Nguyen Van A");
+        request.setIdNumber("123456789012");
+        request.setDob(LocalDate.now());
+        request.setAddress("Hanoi");
+        request.setGender(com.re.rikkei_bank.model.Gender.MALE);
+        MultipartFile file = new MockMultipartFile("file", "test.jpg", "image/jpeg", "test".getBytes());
+        request.setCccdFront(file);
+        request.setCccdBack(file);
+        request.setSelfie(file);
+
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(resubmitUser));
+        when(kycProfileRepository.findByUserId(1L)).thenReturn(Optional.of(rejectedProfile));
+        when(uploadService.uploadFile(any())).thenReturn("http://image.url");
+
+        kycService.resubmitKyc(request, "testuser");
+
+        assertEquals(KycStatus.PENDING, rejectedProfile.getStatus());
+        assertNull(rejectedProfile.getRejectReason());
+        verify(uploadService, times(3)).uploadFile(any());
+        verify(kycProfileRepository).save(rejectedProfile);
     }
 }
